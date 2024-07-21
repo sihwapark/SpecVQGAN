@@ -1,3 +1,47 @@
+# Taming Visually Guided Sound Generation (for macOS)
+
+This fork is to use SpecVQGAN on macOS with Apple sillicon. The original code was modified to utilize PyTorch's Metal Performance Shaders (MPS) backend support. Only sampling was tested on a Mac mini 2023 with M2 Pro and Sonoma 14.5.
+
+Sihwa Park (shpark@yorku.ca) on July 21, 2024
+
+## Conda Environment for macOS
+Use `conda_env_macos.yml` to install the envrioment.
+
+## What Changed
+- In `sample_visualization.py`:
+    
+    ```python
+    def load_model_from_config(config, sd, gpu=True, eval_mode=True):
+    	...
+    	if gpu:
+        if torch.cuda.is_available():
+          model.cuda()
+        elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+          model.to(torch.device('mps'));
+    
+    def load_model_and_dataset(config, ckpt, ckpt_vocoder, gpu=True, eval_mode=True):
+    	...
+    	# loading the vocoder
+        if ckpt_vocoder:
+            vocoder = load_vocoder(ckpt_vocoder, eval_mode)['model']
+            if gpu:
+              if torch.cuda.is_available():
+                vocoder = vocoder.to('cuda')
+              elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+                vocoder = vocoder.to('mps')
+    ```
+    
+- In `./feature_extraction/demo_utils.py`
+    
+    ```python
+    def load_model(model_name, log_dir, device):
+        to_use_gpu = True if device.type == 'cuda' or device.type == 'mps' else False
+    ...
+    ```
+
+## Sampling Demo
+Use the notebook `./generation_demo_macos.ipynb` or the original Streamlit app to play with the demo on a Mac machine.
+
 # Taming Visually Guided Sound Generation
 
 BMVC 2021 – Oral Presentation

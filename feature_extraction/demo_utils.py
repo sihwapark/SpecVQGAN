@@ -186,7 +186,7 @@ def load_config(model_dir: str):
     return config
 
 def load_model(model_name, log_dir, device):
-    to_use_gpu = True if device.type == 'cuda' else False
+    to_use_gpu = True if device.type == 'cuda' or device.type == 'mps' else False
     model_dir = maybe_download_model(model_name, log_dir)
     config = load_config(model_dir)
 

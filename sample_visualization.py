@@ -134,7 +134,10 @@ def load_model_from_config(config, sd, gpu=True, eval_mode=True):
         except NameError:
             pass
     if gpu:
-        model.cuda()
+        if torch.cuda.is_available():
+            model.cuda()
+        elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+            model.to(torch.device('mps'));
     if eval_mode:
         model.eval()
     return {"model": model}
@@ -211,7 +214,12 @@ def load_model_and_dataset(config, ckpt, ckpt_vocoder, gpu=True, eval_mode=True)
     # loading the vocoder
     if ckpt_vocoder:
         vocoder = load_vocoder(ckpt_vocoder, eval_mode)['model']
-        vocoder = vocoder.to('cuda') if gpu else vocoder
+        if gpu:
+            if torch.cuda.is_available():
+                vocoder = vocoder.to('cuda')
+            elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+                vocoder = vocoder.to('mps')
+        
 
     model = load_model_from_config(config.model, pl_sd['state_dict'], gpu=gpu, eval_mode=eval_mode)['model']
 
@@ -534,7 +542,7 @@ def sample_conditionally(z_indices, sampling_shape, c_indices, quant_c, full_att
         # )
         # print(z_pred_indices.reshape(B, hr_w, hr_h).permute(0, 2, 1).permute(0, 2, 1))
 
-        if step % update_every == 0:
+        if update_every > 0 and step % update_every == 0:
             z_pred_img = model.decode_to_img(z_pred_indices, sampling_shape)
             placeholders['title_gen_spec'].text(f'Sampling {mode}. {list(z_pred_img.squeeze().shape)}')
             # fliping the spectrogram just for illustration purposes (low freqs to bottom, high - top)
